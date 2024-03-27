@@ -24,6 +24,10 @@ extra["springCloudVersion"] = "2023.0.0"
 
 dependencies {
 
+	//openai
+	implementation("com.aallam.openai:openai-client:3.7.0")
+	implementation("io.ktor:ktor-client-java:2.3.9")
+
 	//kotlin
 	implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0")
 
