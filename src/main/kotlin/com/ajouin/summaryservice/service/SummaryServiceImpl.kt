@@ -7,7 +7,6 @@ import com.aallam.openai.client.OpenAI
 import com.aallam.openai.client.OpenAIConfig
 import com.ajouin.summaryservice.dto.Summary
 import com.ajouin.summaryservice.dto.SummaryRequest
-import com.ajouin.summaryservice.dto.SummaryResponse
 import com.ajouin.summaryservice.event.SummaryResponseCreatedEvent
 import com.ajouin.summaryservice.logger
 import com.ajouin.summaryservice.publisher.SummaryResponseEventPublisher
@@ -29,10 +28,16 @@ class SummaryServiceImpl(
         val content: ChatCompletion = summaryContent(summaryRequest)
         val summary = jsonToObject(content)
 
-        eventPublisher.publish(SummaryResponseCreatedEvent(
-            id = summaryRequest.id,
-            content = summary.firstSentence + "\n" + summary.secondSentence + "\n" + summary.thirdSentence
-        ))
+        eventPublisher.publish(
+            SummaryResponseCreatedEvent(
+                id = summaryRequest.id,
+                content = summary.firstSentence
+                        + "\n"
+                        + summary.secondSentence
+                        + "\n"
+                        + summary.thirdSentence
+            )
+        )
     }
 
     override suspend fun summaryContent(summaryRequest: SummaryRequest): ChatCompletion {

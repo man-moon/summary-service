@@ -19,6 +19,6 @@ class SummaryRequestEventListener(
         logger.info { "Received message: $message" }
         val request: SummaryRequest = objectMapper.readValue(message, SummaryRequest::class.java)
 
-        summaryService.summaryContent(request)
+        summaryService.processSummaryRequest(request)
     }
 }
