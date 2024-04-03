@@ -16,6 +16,7 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
+import java.util.*
 
 @SpringBootTest
 class SummaryServiceTest @Autowired constructor(
@@ -26,7 +27,7 @@ class SummaryServiceTest @Autowired constructor(
     @Test
     fun summaryServiceTest(): Unit = runBlocking {
         val summaryRequest = SummaryRequest(
-            id = 0L,
+            id = UUID.randomUUID(),
             content = "2024학년도 1학기 가족장학 신청을 \n" +
                     "아래와 같이 안내드리오니 대상 학생은 기간 내 신청하시기 바랍니다.\n" +
                     " 1. 신청자격\n" +
