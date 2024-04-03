@@ -13,9 +13,11 @@ import com.ajouin.summaryservice.publisher.SummaryResponseEventPublisher
 import com.google.gson.Gson
 import com.google.gson.JsonParser
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.cloud.context.config.annotation.RefreshScope
 import org.springframework.stereotype.Service
 
 @Service
+@RefreshScope
 class SummaryServiceImpl(
     private val openAIConfig: OpenAIConfig,
     private val eventPublisher: SummaryResponseEventPublisher,
