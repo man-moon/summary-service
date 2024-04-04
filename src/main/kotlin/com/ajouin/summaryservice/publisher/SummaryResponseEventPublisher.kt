@@ -1,6 +1,7 @@
 package com.ajouin.summaryservice.publisher
 
 import com.ajouin.summaryservice.config.EventQueuesProperties
+import com.ajouin.summaryservice.event.SummaryRerequestCreatedEvent
 import com.ajouin.summaryservice.event.SummaryResponseCreatedEvent
 import com.ajouin.summaryservice.logger
 import com.fasterxml.jackson.databind.ObjectMapper
@@ -23,6 +24,18 @@ class SummaryResponseEventPublisher(
                 .payload(messagePayload)
         }
 
-        logger.info { "Message sent with payload ${event.id}" }
+        logger.info { "Message sent id: ${event.id}" }
+    }
+
+    fun publish(event: SummaryRerequestCreatedEvent) {
+
+        val messagePayload = objectMapper.writeValueAsString(event)
+
+        sqsTemplate.send { to ->
+            to.queue(eventQueuesProperties.summaryRerequestQueue)
+                .payload(messagePayload)
+        }
+
+        logger.info { "Re-request id: ${event.id}" }
     }
 }

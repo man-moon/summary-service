@@ -6,4 +6,5 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 class EventQueuesProperties (
     val summaryRequestQueue: String,
     val summaryResponseQueue: String,
+    val summaryRerequestQueue: String,
 )

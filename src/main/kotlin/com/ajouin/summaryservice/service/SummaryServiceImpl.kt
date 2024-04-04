@@ -1,19 +1,23 @@
 package com.ajouin.summaryservice.service
 
 import com.aallam.openai.api.chat.*
+import com.aallam.openai.api.exception.RateLimitException
 import com.aallam.openai.api.model.ModelId
 import com.aallam.openai.client.Chat
 import com.aallam.openai.client.OpenAI
 import com.aallam.openai.client.OpenAIConfig
 import com.ajouin.summaryservice.dto.Summary
 import com.ajouin.summaryservice.dto.SummaryRequest
+import com.ajouin.summaryservice.event.SummaryRerequestCreatedEvent
 import com.ajouin.summaryservice.event.SummaryResponseCreatedEvent
 import com.ajouin.summaryservice.logger
 import com.ajouin.summaryservice.publisher.SummaryResponseEventPublisher
 import com.google.gson.Gson
 import com.google.gson.JsonParser
+import kotlinx.coroutines.delay
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.cloud.context.config.annotation.RefreshScope
+import org.springframework.integration.handler.advice.RateLimiterRequestHandlerAdvice
 import org.springframework.stereotype.Service
 
 @Service
@@ -26,20 +30,32 @@ class SummaryServiceImpl(
 ) : SummaryService {
 
     override suspend fun processSummaryRequest(summaryRequest: SummaryRequest) {
+        try {
+            val content: ChatCompletion = summaryContent(summaryRequest)
+            val summary = jsonToObject(content)
 
-        val content: ChatCompletion = summaryContent(summaryRequest)
-        val summary = jsonToObject(content)
-
-        eventPublisher.publish(
-            SummaryResponseCreatedEvent(
-                id = summaryRequest.id,
-                content = summary.firstSentence
-                        + "\n"
-                        + summary.secondSentence
-                        + "\n"
-                        + summary.thirdSentence
+            eventPublisher.publish(
+                SummaryResponseCreatedEvent(
+                    id = summaryRequest.id,
+                    content = summary.firstSentence
+                            + "\n"
+                            + summary.secondSentence
+                            + "\n"
+                            + summary.thirdSentence
+                )
             )
-        )
+        } catch (e: RateLimitException) {
+            delay(5000)
+            processSummaryRequest(summaryRequest)
+        } catch (e: Exception) {
+            // 재요청, 큐 지연시간 5분
+            eventPublisher.publish(
+                SummaryRerequestCreatedEvent(
+                    id = summaryRequest.id,
+                    content = summaryRequest.content
+                )
+            )
+        }
     }
 
     override suspend fun summaryContent(summaryRequest: SummaryRequest): ChatCompletion {
@@ -61,6 +77,8 @@ class SummaryServiceImpl(
                 )
             )
         )
+
+        delay(1000)
 
         // coroutine
         val result = openAI.chatCompletion(chatCompletionRequest)

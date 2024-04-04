@@ -11,14 +11,14 @@ import kotlinx.coroutines.launch
 import org.springframework.stereotype.Component
 
 @Component
-class SummaryRequestEventListener(
+class SummaryRerequestEventListener(
     private val objectMapper: ObjectMapper,
     private val summaryService: SummaryService,
 ) {
 
     private val coroutineScope = CoroutineScope(Dispatchers.IO)
 
-    @SqsListener("\${events.queues.summary-request-queue}")
+    @SqsListener("\${events.queues.summary-rerequest-queue}")
     fun receiveContentRequest(message: String) {
 
         coroutineScope.launch {
