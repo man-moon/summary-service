@@ -21,10 +21,9 @@ class SummaryRequestEventListener(
     @SqsListener("\${events.queues.summary-request-queue}")
     fun receiveContentRequest(message: String) {
 
-        logger.info { "Received message: $message" }
-
         coroutineScope.launch {
             val request: SummaryRequest = objectMapper.readValue(message, SummaryRequest::class.java)
+            logger.info { "Received message: ${request.id}" }
             summaryService.processSummaryRequest(request)
         }
 
