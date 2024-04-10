@@ -27,6 +27,8 @@ dependencies {
 	//openai
 	implementation("com.aallam.openai:openai-client:3.7.0")
 	implementation("io.ktor:ktor-client-java:2.3.9")
+	implementation("com.aallam.ktoken:ktoken:0.3.0")
+//	implementation ("com.theokanning.openai-gpt3-java:service:<version>")
 
 	//kotlin
 	implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0")
