@@ -1,5 +1,7 @@
 package com.ajouin.summaryservice.service
 
+import com.aallam.ktoken.Encoding
+import com.aallam.ktoken.Tokenizer
 import com.aallam.openai.api.chat.*
 import com.aallam.openai.api.exception.RateLimitException
 import com.aallam.openai.api.model.ModelId
@@ -15,10 +17,14 @@ import com.ajouin.summaryservice.publisher.SummaryResponseEventPublisher
 import com.google.gson.Gson
 import com.google.gson.JsonParser
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.cloud.context.config.annotation.RefreshScope
 import org.springframework.integration.handler.advice.RateLimiterRequestHandlerAdvice
 import org.springframework.stereotype.Service
+import java.util.concurrent.atomic.AtomicInteger
 
 @Service
 @RefreshScope
@@ -29,7 +35,21 @@ class SummaryServiceImpl(
     @Value("\${openai.prompt}") private val prompt: String,
 ) : SummaryService {
 
+    val tokens = AtomicInteger(0)
+    val mutex = Mutex()
+    val maxTpm = 60000
+
     override suspend fun processSummaryRequest(summaryRequest: SummaryRequest) {
+
+        val tokenCount = Tokenizer.of(encoding = Encoding.CL100K_BASE).encode(summaryRequest.content).size
+        mutex.withLock {
+            while (tokens.get() + tokenCount > maxTpm * 0.9) {
+                delay(1000)
+            }
+
+            tokens.addAndGet(tokenCount)
+        }
+
         try {
             val content: ChatCompletion = summaryContent(summaryRequest)
             val summary = jsonToObject(content)
@@ -44,10 +64,12 @@ class SummaryServiceImpl(
                             + summary.thirdSentence
                 )
             )
-        } catch (e: RateLimitException) {
-            delay(5000)
-            processSummaryRequest(summaryRequest)
         } catch (e: Exception) {
+            when (e) {
+                is RateLimitException -> logger.error { "OpenAI api 요청 제한이 발생하여, 일정 시간 후 재시도" }
+                else -> logger.error { e.message }
+            }
+
             // 재요청, 큐 지연시간 5분
             eventPublisher.publish(
                 SummaryRerequestCreatedEvent(
@@ -55,6 +77,11 @@ class SummaryServiceImpl(
                     content = summaryRequest.content
                 )
             )
+        } finally {
+            delay(60000)
+            mutex.withLock {
+                tokens.addAndGet(-tokenCount)
+            }
         }
     }
 
@@ -78,9 +105,7 @@ class SummaryServiceImpl(
             )
         )
 
-        delay(1000)
-
-        // coroutine
+        // chatCompletion is suspend function
         val result = openAI.chatCompletion(chatCompletionRequest)
 
         return result

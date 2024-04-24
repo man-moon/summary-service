@@ -20,6 +20,7 @@ class OpenAIConfig(
         return OpenAIConfig(
             token = apiKey,
             timeout = Timeout(socket = 60.seconds),
+
         )
     }
 }
