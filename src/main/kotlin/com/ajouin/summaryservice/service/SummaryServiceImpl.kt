@@ -35,20 +35,7 @@ class SummaryServiceImpl(
     @Value("\${openai.prompt}") private val prompt: String,
 ) : SummaryService {
 
-    val tokens = AtomicInteger(0)
-    val mutex = Mutex()
-    val maxTpm = 60000
-
     override suspend fun processSummaryRequest(summaryRequest: SummaryRequest) {
-
-        val tokenCount = Tokenizer.of(encoding = Encoding.CL100K_BASE).encode(summaryRequest.content).size
-        mutex.withLock {
-            while (tokens.get() + tokenCount > maxTpm * 0.9) {
-                delay(1000)
-            }
-
-            tokens.addAndGet(tokenCount)
-        }
 
         try {
             val content: ChatCompletion = summaryContent(summaryRequest)
@@ -64,24 +51,15 @@ class SummaryServiceImpl(
                             + summary.thirdSentence
                 )
             )
+            logger.info { "summaryRequestId=${summaryRequest.id} 정상적으로 처리됨" }
         } catch (e: Exception) {
             when (e) {
-                is RateLimitException -> logger.error { "OpenAI api 요청 제한이 발생하여, 일정 시간 후 재시도" }
+                is RateLimitException -> logger.error { "OpenAI api 요청 제한 발생" }
                 else -> logger.error { e.message }
             }
-
-            // 재요청, 큐 지연시간 5분
-            eventPublisher.publish(
-                SummaryRerequestCreatedEvent(
-                    id = summaryRequest.id,
-                    content = summaryRequest.content
-                )
-            )
         } finally {
-            delay(60000)
-            mutex.withLock {
-                tokens.addAndGet(-tokenCount)
-            }
+            logger.debug { "70초 대기" }
+            delay(70000)
         }
     }
 

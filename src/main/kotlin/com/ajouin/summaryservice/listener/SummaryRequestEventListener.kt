@@ -12,25 +12,6 @@ import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import org.springframework.stereotype.Component
 
-//@Component
-//class SummaryRequestEventListener(
-//    private val objectMapper: ObjectMapper,
-//    private val summaryService: SummaryService,
-//) {
-//
-//    private val coroutineScope = CoroutineScope(Dispatchers.IO)
-//
-//    @SqsListener("\${events.queues.summary-request-queue}")
-//    fun receiveContentRequest(message: String) {
-//
-//        coroutineScope.launch {
-//            val request: SummaryRequest = objectMapper.readValue(message, SummaryRequest::class.java)
-//            logger.info { "Received message: ${request.id}" }
-//            summaryService.processSummaryRequest(request)
-//        }
-//    }
-//}
-
 @Component
 class SummaryRequestEventListener(
     private val objectMapper: ObjectMapper,
