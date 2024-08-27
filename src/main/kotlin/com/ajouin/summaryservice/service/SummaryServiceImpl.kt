@@ -24,6 +24,7 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.cloud.context.config.annotation.RefreshScope
 import org.springframework.integration.handler.advice.RateLimiterRequestHandlerAdvice
 import org.springframework.stereotype.Service
+import java.net.ConnectException
 import java.util.concurrent.atomic.AtomicInteger
 
 @Service
@@ -83,8 +84,18 @@ class SummaryServiceImpl(
             )
         )
 
-        // chatCompletion is suspend function
-        val result = openAI.chatCompletion(chatCompletionRequest)
+        var result: ChatCompletion? = null
+        while (result == null) {
+            try {
+                result = openAI.chatCompletion(chatCompletionRequest)
+            } catch (e: ConnectException) {
+                logger.error { "ConnectException 발생으로 재시도" }
+                delay(1000)
+            } catch (e: Exception) {
+                logger.error { e.message }
+                throw e
+            }
+        }
 
         return result
     }
